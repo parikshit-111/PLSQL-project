@@ -1,0 +1,310 @@
+
+CREATE OR REPLACE PACKAGE body Cart_details_pkg
+AS
+
+
+  FUNCTION create_cart(I_cust_id             in customer.cust_id%type,
+                       I_course_name         in course_names,
+                         O_error_message   in out varchar2)
+  RETURN BOOLEAN IS
+  L_cart_id               cart.cart_id%type         :=null;
+  L_course_id             course.course_id%type     :=null;
+  L_total_course          course.course_id%type     :=null;
+  L_course_name           course.course_name%type   :=null;
+  L_get_cart_total_price  course.course_price%type  :=null;
+  L_code NUMBER;
+  L_errm VARCHAR2(64);
+  
+  CURSOR c_get_course_id IS
+  select course_id
+    from course
+   where course_name in(L_course_name);
+   
+   
+  CURSOR c_get_cart_total_price IS
+  select sum(c.course_price) total_price,
+         count(c.course_id)  total_course
+    from course c,
+	     cart_course cc,
+		 cart ct
+   where c.course_id=cc.course_id
+     and ct.cart_id=cc.cart_id
+     and cc.cart_id=L_cart_id
+   group by cc.cart_id;
+  
+  BEGIN
+    L_cart_id:=cart_seq.NEXTVAL;
+	
+    insert into cart(cart_id,
+	                 cust_id)
+			  values(L_cart_id,
+			         I_cust_id);
+					 
+	for i in 1 .. I_course_name.count
+    LOOP
+       L_course_name := I_course_name(i);
+       open c_get_course_id;
+       fetch c_get_course_id into L_course_id;
+       close c_get_course_id;
+
+	   insert into cart_course(cart_id,
+	                           course_id)
+						  values(L_cart_id,
+						         L_course_id);
+    end LOOP;	
+					 
+	commit;	
+	
+	open c_get_cart_total_price;
+	fetch c_get_cart_total_price into L_get_cart_total_price,
+                                      L_total_course;
+	close c_get_cart_total_price;
+	
+	update cart 
+	   set total_price=L_get_cart_total_price,
+           total_course=L_total_course
+	 where cart_id=L_cart_id;
+	 
+	 commit;
+	
+	
+    
+  	return true;					  
+	EXCEPTION
+	
+	WHEN OTHERS THEN
+    L_code := SQLCODE;
+    L_errm := SUBSTR(SQLERRM, 1 , 64);
+	O_error_message := 'Could not insert the customer data '||L_code||' '||L_errm;
+	return false;
+	
+  end create_cart;
+  
+  FUNCTION view_cart(I_cart_id       in cart.cart_id%type,
+                     O_error_message   in out varchar2)
+  RETURN BOOLEAN IS
+  
+  L_course_name           course.course_name%type               :=null;
+  L_total_course          course.course_id%type                 :=null;
+  L_total_price           course.course_price%type              :=null;
+  L_cust_display_name     customer.display_name%type            :=null;
+  L_course_desc           course.course_desc%type               :=null;
+  L_course_avg_rating     course.course_avg_rating%type         :=null;
+  L_course_price          course.course_price%type              :=null;
+  L_author_name           author.author_name%type               :=null;
+  L_code NUMBER;
+  L_errm VARCHAR2(64);
+  
+  CURSOR c_get_cart_course_details IS
+  select c.course_name,
+          c.course_desc,
+		  c.course_price,
+		  a.author_name
+	  from course c,
+	       author a,
+		   author_course ac,
+		   cart_course cc,
+		   cart ct
+	 where a.author_id=ac.author_id
+	   and c.course_id=ac.course_id
+	   and c.course_id=cc.course_id
+	   and ct.cart_id=cc.cart_id
+	   and ct.cart_id=I_cart_id;
+	   
+	CURSOR c_get_cart_details IS
+  select ct.total_price,
+         ct.total_course,
+		 cu.display_name
+	from cart ct,
+	     customer cu
+	where cart_id=I_cart_id
+	   and ct.cust_id=cu.cust_id;
+  
+  BEGIN
+  
+    open c_get_cart_details;
+	fetch c_get_cart_details into L_total_price,L_total_course,L_cust_display_name;
+	close c_get_cart_details;
+    
+	dbms_output.put_line('xxxxxxxxxxxx CART DETAILS xxxxxxxxxxxx');
+  
+    for i in c_get_cart_course_details
+	LOOP
+	   L_course_name        :=i.course_name;
+	   L_course_desc        :=i.course_desc;
+	   L_course_price       :=i.course_price; 
+	   L_author_name        :=i.author_name;
+	   
+	dbms_output.put_line('COURSE NAME : '||L_course_name);
+	dbms_output.put_line('COURSE DESC : '||L_course_desc);
+	dbms_output.put_line('COURSE PRICE : '||L_course_price);
+	dbms_output.put_line('COURSE AUTHOR : '||L_author_name);
+	dbms_output.put_line('-----------------------------------------');
+
+	   
+	end loop;
+	
+	dbms_output.put_line('xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx');
+	dbms_output.put_line('CART OVERVIEW :');
+	dbms_output.put_line('xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx');
+	dbms_output.put_line('CART TOTAL PRICE: '||L_total_price);
+	dbms_output.put_line('CART TOTAL QUANTITY : '||L_total_course);
+	dbms_output.put_line('CART OWNER : '||L_cust_display_name);
+	dbms_output.put_line('xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx');
+  
+  	return true;					  
+  EXCEPTION
+	
+	WHEN OTHERS THEN
+    L_code := SQLCODE;
+    L_errm := SUBSTR(SQLERRM, 1 , 64);
+	O_error_message := 'Could not fetch cart data '||L_code||' '||L_errm;
+	return false;
+	
+  end view_cart;
+
+  FUNCTION delete_cart(I_cart_id         in cart.cart_id%type,
+                       I_course_name     in course.course_name%type,
+                       O_error_message   in out varchar2)
+  RETURN BOOLEAN IS
+  
+  
+  L_total_course          course.course_id%type     :=null;
+  L_get_cart_total_price  course.course_price%type  :=null;
+  L_course_id             course.course_id%type     :=null;
+  L_code NUMBER;
+  L_errm VARCHAR2(64);
+  
+    CURSOR c_get_cart_details IS
+  select sum(c.course_price) total_price,
+         count(c.course_id)  total_course
+    from course c,
+	     cart_course cc,
+		 cart ct
+   where c.course_id=cc.course_id
+     and ct.cart_id=cc.cart_id
+     and cc.cart_id=I_cart_id
+   group by cc.cart_id;
+   
+   CURSOR c_get_course_id IS
+   select course_id
+    from course
+    where course_name=I_course_name;
+  
+  BEGIN
+    open c_get_course_id;
+	fetch c_get_course_id into L_course_id;
+	close c_get_course_id;
+	
+    delete from cart_course
+	  where cart_id=I_cart_id
+	  and course_id=L_course_id;
+	  
+	commit;	
+	
+	open c_get_cart_details;
+	fetch c_get_cart_details into L_get_cart_total_price,
+                                      L_total_course;
+	close c_get_cart_details;
+	
+	update cart 
+	   set total_price=L_get_cart_total_price,
+           total_course=L_total_course
+	 where cart_id=I_cart_id;
+	 
+	 commit;  
+  
+  	return true;					  
+  EXCEPTION
+	
+	WHEN OTHERS THEN
+    L_code := SQLCODE;
+    L_errm := SUBSTR(SQLERRM, 1 , 64);
+	O_error_message := 'Could not fetch cart data '||L_code||' '||L_errm;
+	return false;
+	
+  END delete_cart;
+  
+  FUNCTION create_order(I_cart_id       in cart.cart_id%type,
+                         O_error_message   in out varchar2)
+  RETURN BOOLEAN IS
+  
+  L_total_course          course.course_id%type     :=null;
+  L_course_id             course.course_id%type     :=null;
+  L_total_price           course.course_price%type  :=null;
+  L_cust_id               customer.cust_id%type     :=null;
+  L_order_id              orders.order_id%type      :=null;
+  L_ship_id               orders.ship_id%type       :=null;
+  L_delivery_id           orders.delivery_id%type   :=null;
+  L_sysdate             DATE                        :=SYSDATE;
+  L_code NUMBER;
+  L_errm VARCHAR2(64);
+  
+  CURSOR c_get_cart_details IS
+  select cust_id,
+         total_price,
+		 total_course
+	from cart
+	where cart_id=I_cart_id;
+
+  CURSOR c_get_cart_course_details IS
+  select course_id
+	from cart_course
+	where cart_id=I_cart_id;         
+  
+  BEGIN
+    L_order_id   :=order_seq.NEXTVAL;
+	L_ship_id    :=ship_seq.NEXTVAL;
+	L_delivery_id:=delivery_seq.NEXTVAL;
+	
+    open c_get_cart_details;
+	fetch c_get_cart_details into L_cust_id,
+	                              L_total_price,
+								  L_total_course;
+	close c_get_cart_details;
+	
+	insert into orders(order_id,
+	                   cust_id,
+					   order_date,
+					   total_price, 
+					   total_course,
+					   ship_id,
+					   delivery_id )
+				  values(L_order_id,
+				         L_cust_id,
+						 L_sysdate,
+						 L_total_price,
+						 L_total_course,
+						 L_ship_id,
+						 L_delivery_id);
+						 
+	for i in c_get_cart_course_details
+    LOOP
+	    L_course_id := i.course_id;
+	    insert into order_course(order_id,
+		                          course_id)
+							values(L_order_id,
+							       L_course_id);
+								   
+		insert into customer_course(cust_id,
+		                            course_id,
+									bought_date)
+                              values(L_cust_id,
+							         L_course_id,
+									 L_sysdate);									
+    end LOOP;	
+	
+	commit;
+	
+  	return true;					  
+  EXCEPTION
+	
+	WHEN OTHERS THEN
+    L_code := SQLCODE;
+    L_errm := SUBSTR(SQLERRM, 1 , 64);
+	O_error_message := 'Could not fetch cart data '||L_code||' '||L_errm;
+	return false;
+  
+  END create_order;
+
+End Cart_details_pkg;	 

@@ -1,0 +1,36 @@
+CREATE OR REPLACE PACKAGE Customer_details_pkg
+AS
+
+  FUNCTION create_customer(I_cust_details  in customer_details,
+                           I_cust_id       out customer.cust_id%type,
+                           O_error_message in out varchar2)
+  RETURN BOOLEAN;
+  
+  FUNCTION create_customer_address(I_cust_id in customer.cust_id%type,                                 
+                                   I_cust_add_details  in customer_address,
+                                   O_error_message in out varchar2)
+  RETURN BOOLEAN;
+  
+  FUNCTION create_customer_interest(I_cust_id  in customer.cust_id%type,
+                                    I_cust_interest in customer_interest_id,
+                                    O_error_message in out varchar2)
+  RETURN BOOLEAN;
+
+  FUNCTION update_customer_detail(I_cust_details  in customer%rowtype,
+                           I_profile_pic_size in profile_pic.pic_size%type,
+						   I_profile_pic_dir  in varchar2,  
+						   I_profile_pic_name in profile_pic.profile_pic_name%type ,       
+                           I_cust_id       in customer.cust_id%type,
+                           O_error_message in out varchar2)
+  RETURN BOOLEAN;
+
+  FUNCTION update_customer_address(I_address_id in address.address_id%type,                                  
+                                   I_cust_add_details  in customer_address,
+                                   O_error_message in out varchar2)
+  RETURN BOOLEAN;
+
+  FUNCTION view_customer_course(I_cust_id       in customer.cust_id%type,
+                                O_error_message   in out varchar2)
+  RETURN BOOLEAN;
+  
+END Customer_details_pkg;

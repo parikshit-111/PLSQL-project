@@ -1,0 +1,449 @@
+
+CREATE OR REPLACE PACKAGE body Customer_details_pkg
+AS
+
+  FUNCTION create_customer(I_cust_details  in customer_details,
+                           I_cust_id       out customer.cust_id%type,
+                           O_error_message in out varchar2)
+  RETURN BOOLEAN IS
+  
+  L_cust_id           customer.cust_id%type             := null;
+  L_first_name        customer.first_name%type          := null;
+  L_last_name         customer.last_name%type           := null;
+  L_username          customer.username%type            := null;
+  L_display_name      customer.display_name%type        := null;
+  L_cust_email        customer.cust_email%type          := null;
+  L_mobile            customer.mobile%type              := null;
+  L_bio               customer.cust_bio%type            := null;
+  L_user_type_id      customer.user_type_id%type        := null;
+  L_gender_id         customer.gender_id%type           := null;
+  L_experience        customer.total_experience%type    := null;
+  L_dob               customer.date_of_birth%type       := null;
+  L_joining_date      customer.joining_date%type        := null;
+  L_profile_pic_dir   varchar2(255)                     := null;
+  L_profile_pic_name  profile_pic.profile_pic_name%type := null;
+  L_profile_pic_id    profile_pic.profile_pic_id%type   := null; 
+  L_profile_pic_size  profile_pic.pic_size%type         :=null;  
+  L_sysdate           DATE                              :=SYSDATE;
+  L_code NUMBER;
+  L_errm VARCHAR2(64);
+  
+  BEGIN
+  
+    L_cust_id           :=cust_seq.NEXTVAL;
+    L_profile_pic_id    :=profile_pic_seq.NEXTVAL;
+	L_first_name        :=I_cust_details.first_name;      
+	L_last_name         :=I_cust_details.last_name;       
+	L_username          :=I_cust_details.username;        
+	L_display_name      :=I_cust_details.display_name;    
+	L_cust_email        :=I_cust_details.cust_email;      
+	L_mobile            :=I_cust_details.mobile;          
+	L_bio               :=I_cust_details.bio;             
+	L_user_type_id      :=I_cust_details.user_type_id;    
+	L_gender_id         :=I_cust_details.gender_id;       
+	L_experience        :=I_cust_details.experience;     
+	L_dob               :=I_cust_details.dob;             
+	L_joining_date      :=I_cust_details.joining_date;  
+	L_profile_pic_size  :=I_cust_details.profile_pic_size;    
+	L_profile_pic_dir   :=I_cust_details.profile_pic_dir;
+	L_profile_pic_name  :=I_cust_details.profile_pic_name;
+    
+
+	
+	insert into profile_pic(profile_pic_id,
+	                        profile_pic_name,
+	                        profile_pic,
+                            upload_date,
+                            pic_size)
+					values(L_profile_pic_id,
+				           L_profile_pic_name,
+						   BFILENAME(L_profile_pic_dir,L_profile_pic_name),
+						   L_sysdate,
+						   L_profile_pic_size
+					       );
+				   
+	insert into customer(cust_id,					   
+						 username, 
+						 first_name,  
+                         last_name,
+                         display_name,
+                         cust_email,
+                         mobile,
+                         cust_bio,
+                         user_type_id,
+                         gender_id,
+                         profile_pic_id,
+                         total_experience,
+                         date_of_birth,
+                         joining_date)
+				   values(L_cust_id,    
+                          L_username, 
+				          L_first_name,
+                          L_last_name,      
+                          L_display_name,  
+                          L_cust_email,    
+                          L_mobile,        
+                          L_bio,           
+                          L_user_type_id,  
+                          L_gender_id, 
+                          L_profile_pic_id,						  
+                          L_experience,    
+                          L_dob,         
+                          L_joining_date);  
+	commit;
+
+	I_cust_id:=L_cust_id;					  
+	return true;					  
+	EXCEPTION
+	
+	WHEN OTHERS THEN
+    L_code := SQLCODE;
+    L_errm := SUBSTR(SQLERRM, 1 , 64);
+	O_error_message := 'Could not insert the customer data '||L_code||' '||L_errm;
+	return false;
+	 
+	End create_customer;
+
+	FUNCTION create_customer_address(I_cust_id in customer.cust_id%type,                                 
+                                     I_cust_add_details  in customer_address,
+                                   O_error_message in out varchar2)
+    RETURN BOOLEAN IS
+	
+	L_cust_id           customer.cust_id%type                      := null;
+	L_address_id        address.address_id%type                    := null;
+	L_line_1            address.line_1%type                        := null;
+	L_line_2            address.line_2%type                        := null;
+	L_city              address.city%type                          := null;
+	L_state             address.state%type                         := null;
+	L_country           address.country%type                       := null;
+	L_pincode           address.pincode%type                       := null;
+	L_address_type_id   address.address_type_id%type               := null;  
+    L_sysdate           DATE                                       :=SYSDATE;
+    L_code              NUMBER;
+    L_errm              VARCHAR2(64);
+	
+	BEGIN
+	
+	L_cust_id           :=I_cust_id;
+	L_address_id        :=address_seq.Nextval;
+	L_line_1            :=I_cust_add_details.address_line_1; 
+	L_line_2            :=I_cust_add_details.address_line_2; 
+	L_city              :=I_cust_add_details.city;
+	L_state             :=I_cust_add_details.state;
+	L_country           :=I_cust_add_details.country;
+	L_pincode           :=I_cust_add_details.pincode;
+	L_address_type_id   :=I_cust_add_details.address_type_id;
+	
+	insert into address(address_id,
+	                    line_1,        
+	                    line_2,          
+	                    city,            
+	                    state,           
+	                    country,         
+	                    pincode,         
+	                    address_type_id)
+                  values(L_address_id,
+				         L_line_1,         
+                         L_line_2,         
+                         L_city,          
+                         L_state,          
+                         L_country,        
+                         L_pincode,        
+				         L_address_type_id);
+
+	insert into cust_address(cust_id,         
+	                         address_id)
+                      values(L_cust_id,        
+				             L_address_id);						 
+	commit;
+	
+	return true;					  
+	EXCEPTION
+	
+	WHEN OTHERS THEN
+    L_code := SQLCODE;
+    L_errm := SUBSTR(SQLERRM, 1 , 64);
+	O_error_message := 'Could not insert the customer address data '||L_code||' '||L_errm;
+	return false;
+	
+	end create_customer_address;
+	
+	  FUNCTION create_customer_interest(I_cust_id  in customer.cust_id%type,
+                                    I_cust_interest in customer_interest_id,
+                                    O_error_message in out varchar2)
+  RETURN BOOLEAN IS
+  
+  l_total             number                                 :=I_cust_interest.count;
+  l_interest          course_domain.course_domain_name%type  :=null;
+  l_get_course_domain course_domain.course_domain_id%type    :=null;  
+  L_sysdate           DATE                              :=SYSDATE;
+  L_code NUMBER;
+  L_errm VARCHAR2(64);
+  
+  CURSOR c_get_course_domain IS
+  select course_domain_id
+    from course_domain
+   where lower(course_domain_name)=lower(l_interest);
+  BEGIN
+  
+  for i in 1 .. l_total
+  LOOP
+     l_interest :=I_cust_interest(i);
+	 
+	 open c_get_course_domain;
+	 fetch c_get_course_domain into l_get_course_domain;
+	 close c_get_course_domain;
+	 
+	 if l_get_course_domain is not null THEN
+    
+	 insert into cust_interest(cust_id,
+	                           interest_id)
+						values(I_cust_id,
+						       L_get_course_domain);
+		commit;					   
+		dbms_output.put_line('Interest '||I_cust_interest(i)||' is successfully added for customer_id '||I_cust_id);
+     ELSE
+    	dbms_output.put_line('Interest '||I_cust_interest(i)||' is not valid. Please select correct interest'); 
+	 end if;
+	 l_get_course_domain:=null;
+  END LOOP;
+  
+  return true;					  
+	EXCEPTION
+	
+	WHEN OTHERS THEN
+    L_code := SQLCODE;
+    L_errm := SUBSTR(SQLERRM, 1 , 64);
+	O_error_message := 'Could not insert the customer interest data '||L_code||' '||L_errm;
+	return false;
+	
+  End create_customer_interest;
+  
+  FUNCTION update_customer_detail(I_cust_details  in customer%rowtype,
+                           I_profile_pic_size in profile_pic.pic_size%type,
+						   I_profile_pic_dir  in varchar2,  
+						   I_profile_pic_name in profile_pic.profile_pic_name%type ,       
+                           I_cust_id       in customer.cust_id%type,
+                           O_error_message in out varchar2)
+  RETURN BOOLEAN IS
+  
+  L_first_name        customer.first_name%type          := null;
+  L_last_name         customer.last_name%type           := null;
+  L_username          customer.username%type            := null;
+  L_display_name      customer.display_name%type        := null;
+  L_cust_email        customer.cust_email%type          := null;
+  L_mobile            customer.mobile%type              := null;
+  L_bio               customer.cust_bio%type            := null;
+  L_user_type_id      customer.user_type_id%type        := null;
+  L_gender_id         customer.gender_id%type           := null;
+  L_experience        customer.total_experience%type    := null;
+  L_dob               customer.date_of_birth%type       := null;
+  L_joining_date      customer.joining_date%type        := null;
+  L_profile_pic_dir   varchar2(255)                     := null;
+  L_profile_pic_name  profile_pic.profile_pic_name%type := null;
+  L_profile_pic_id    profile_pic.profile_pic_id%type   := null; 
+  L_profile_pic_size  profile_pic.pic_size%type         :=null;  
+  L_sysdate           DATE                              :=SYSDATE;
+  L_code NUMBER;
+  L_errm VARCHAR2(64);
+  
+  CURSOR  c_get_cust_details IS
+   select first_name,    
+       last_name,     
+       username,      
+       display_name , 
+       cust_email,    
+       mobile,        
+       cust_bio,      
+       user_type_id,  
+       gender_id,     
+       total_experience,    
+       date_of_birth, 
+       joining_date
+   from customer
+  where cust_id=I_cust_id;
+  
+  BEGIN
+
+	L_profile_pic_size  :=I_profile_pic_size  ;  
+	L_profile_pic_dir   :=I_profile_pic_dir ; 
+	L_profile_pic_name  :=I_profile_pic_name ;
+    
+   open c_get_cust_details;
+   fetch c_get_cust_details into L_first_name,       
+                                 L_last_name,     
+                                 L_username,      
+                                 L_display_name , 
+                                 L_cust_email,    
+                                 L_mobile,        
+                                 L_bio,           
+                                 L_user_type_id,  
+                                 L_gender_id,     
+                                 L_experience,    
+                                 L_dob,           
+                                 L_joining_date ;
+    close c_get_cust_details;
+    
+    if 	L_first_name!=I_cust_details.first_name then
+  	    L_first_name:=I_cust_details.first_name	;
+    elsif L_last_name!=I_cust_details.last_name then
+  	        L_last_name:=I_cust_details.last_name;
+    elsif L_username!=I_cust_details.username then
+  	        L_username:=I_cust_details.username	;
+    elsif L_display_name!=I_cust_details.display_name then
+  	        L_display_name:=I_cust_details.display_name	;
+    elsif L_cust_email!=I_cust_details.cust_email then
+  	        L_cust_email:=I_cust_details.cust_email	;
+    elsif L_mobile!=I_cust_details.mobile then
+  	        L_mobile:=I_cust_details.mobile	;
+    elsif L_bio!=I_cust_details.cust_bio then
+  	        L_bio:=I_cust_details.cust_bio	;
+    elsif L_user_type_id!=I_cust_details.user_type_id then
+  	        L_user_type_id:=I_cust_details.user_type_id	;
+    elsif L_gender_id!=I_cust_details.gender_id then
+  	        L_gender_id:=I_cust_details.gender_id	;
+    elsif L_experience!=I_cust_details.total_experience then
+  	        L_experience:=I_cust_details.total_experience	;
+    elsif L_dob!=I_cust_details.date_of_birth then
+  	        L_dob:=I_cust_details.date_of_birth	;
+    elsif L_joining_date!=I_cust_details.joining_date then
+  	        L_joining_date:=I_cust_details.joining_date	;
+    end if;        
+	
+	update profile_pic
+	   set profile_pic=BFILENAME(L_profile_pic_dir,L_profile_pic_name),
+           pic_size=L_profile_pic_size
+	 where profile_pic_id=(select profile_pic_id 
+	                         from customer
+							where cust_id=I_cust_id);
+				   
+	update customer
+	   set first_name       = L_first_name,   
+           last_name        = L_last_name,    
+           username         = L_username,     
+           display_name     = L_display_name ,
+           cust_email       = L_cust_email,   
+           mobile           = L_mobile,       
+           cust_bio         = L_bio,          
+           user_type_id     = L_user_type_id, 
+           gender_id        = L_gender_id,    
+           total_experience = L_experience,   
+           date_of_birth    = L_dob,          
+           joining_date     = L_joining_date 
+	 where cust_id=I_cust_id;
+	 
+	commit;
+				  
+	return true;					  
+	EXCEPTION
+	
+	WHEN OTHERS THEN
+    L_code := SQLCODE;
+    L_errm := SUBSTR(SQLERRM, 1 , 64);
+	O_error_message := 'Could not update the customer data '||L_code||' '||L_errm;
+	return false;
+	 
+	End update_customer_detail;
+
+	FUNCTION update_customer_address(I_address_id in address.address_id%type,                                 I_cust_add_details  in customer_address,
+                                     O_error_message in out varchar2)
+    RETURN BOOLEAN IS
+
+    L_code              NUMBER;
+    L_errm              VARCHAR2(64);
+	
+	BEGIN
+
+	
+	update address
+	   set line_1          = I_cust_add_details.address_line_1,
+	       line_2          = I_cust_add_details.address_line_2,
+	       city            = I_cust_add_details.city,
+	       state           = I_cust_add_details.state,
+	       country         = I_cust_add_details.country,
+	       pincode         = I_cust_add_details.pincode,
+	       address_type_id = I_cust_add_details.address_type_id
+	 where address_id = I_address_id;   
+					 
+	commit;
+	
+	return true;					  
+	EXCEPTION
+	
+	WHEN OTHERS THEN
+    L_code := SQLCODE;
+    L_errm := SUBSTR(SQLERRM, 1 , 64);
+	O_error_message := 'Could not update the customer address data '||L_code||' '||L_errm;
+	return false;
+	
+	end update_customer_address;
+
+  FUNCTION view_customer_course(I_cust_id       in customer.cust_id%type,
+                                O_error_message   in out varchar2)
+  RETURN BOOLEAN IS
+  
+  L_course_name           course.course_name%type               :=null;
+  L_cust_display_name     customer.display_name%type            :=null;
+  L_course_desc           course.course_desc%type               :=null;
+  L_course_avg_rating     course.course_avg_rating%type         :=null;
+  L_author_name           author.author_name%type               :=null;
+    L_code              NUMBER;
+    L_errm              VARCHAR2(64);
+  
+  CURSOR c_get_cust_course_details IS
+     select c.course_name,
+          c.course_desc,
+		  c.course_avg_rating,
+		  a.author_name
+	  from course c,
+	       author a,
+		   author_course ac,
+		   customer cu,
+		   customer_course cc
+	 where a.author_id=ac.author_id
+	   and cc.course_id=c.course_id
+	   and cc.cust_id=cu.cust_id
+	   and c.course_id=ac.course_id
+	   and cu.cust_id=I_cust_id;
+
+  CURSOR c_get_cust_name  IS
+     select display_name
+	  from customer 
+	 where cust_id=I_cust_id;
+
+  
+  BEGIN
+    open c_get_cust_name;
+	fetch c_get_cust_name into L_cust_display_name;
+	close c_get_cust_name;
+    dbms_output.put_line('XXXXXXXXXXXX CUSTOMER COURSES XXXXXXXXXXXX');
+	dbms_output.put_line('CUSTOMER NAME : '||L_cust_display_name);
+    dbms_output.put_line('-----------------------------------------');
+    for i in c_get_cust_course_details
+	LOOP
+	  L_course_name       :=i.course_name;
+	  L_course_desc       :=i.course_desc;  
+	  L_course_avg_rating :=i.course_avg_rating;     
+	  L_author_name       :=i.author_name;
+	  
+	dbms_output.put_line('COURSE NAME : '||L_course_name);
+	dbms_output.put_line('COURSE DESC : '||L_course_desc);
+	dbms_output.put_line('COURSE AVG RATING : '||L_course_avg_rating);
+	dbms_output.put_line('COURSE AUTHOR : '||L_author_name);
+	dbms_output.put_line('-----------------------------------------');
+	  
+	end LOOP;
+  
+	return true;					  
+	EXCEPTION
+	
+	WHEN OTHERS THEN
+    L_code := SQLCODE;
+    L_errm := SUBSTR(SQLERRM, 1 , 64);
+	O_error_message := 'Could not update the customer address data '||L_code||' '||L_errm;
+	return false;  
+  
+  end view_customer_course;
+
+	
+End Customer_details_pkg;	

@@ -1,0 +1,24 @@
+CREATE OR REPLACE PACKAGE Cart_details_pkg
+AS
+
+  
+  FUNCTION create_cart(I_cust_id             in customer.cust_id%type,
+                       I_course_name         in course_names,
+                         O_error_message   in out varchar2)
+  RETURN BOOLEAN ;
+  
+  FUNCTION view_cart(I_cart_id       in cart.cart_id%type,
+                     O_error_message   in out varchar2)
+  RETURN BOOLEAN;
+
+  FUNCTION delete_cart(I_cart_id         in cart.cart_id%type,
+                       I_course_name     in course.course_name%type,
+                       O_error_message   in out varchar2)
+  RETURN BOOLEAN ;
+  
+  FUNCTION create_order(I_cart_id       in cart.cart_id%type,
+                         O_error_message   in out varchar2)
+  RETURN BOOLEAN ;
+
+
+END Cart_details_pkg;

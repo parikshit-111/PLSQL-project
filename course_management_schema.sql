@@ -1,0 +1,161 @@
+CREATE TABLE FIELD_DOMAIN( FIELD_DOMAIN_ID NUMBER,
+                           FIELD_DOMAIN_NAME VARCHAR2(32),
+                           CONSTRAINT PK_FIELD_DOMAIN_ID PRIMARY KEY(FIELD_DOMAIN_ID)
+					)
+/
+CREATE TABLE GENDER(GENDER_ID NUMBER,
+                    GENDER_NAME VARCHAR2(32),
+                    CONSTRAINT PK_GENDER_ID PRIMARY KEY(GENDER_ID)
+                   )
+/
+CREATE TABLE USER_TYPE(USER_TYPE_ID NUMBER,
+                       USER_TYPE_NAME VARCHAR2(32),
+                       CONSTRAINT PK_USER_TYPE_ID PRIMARY KEY(USER_TYPE_ID)
+                       )
+/
+CREATE TABLE PROFILE_PIC(PROFILE_PIC_ID NUMBER,
+                         PROFILE_PIC_NAME VARCHAR2(225),
+                         PROFILE_PIC BFILE,
+						 UPLOAD_DATE DATE,
+						 PIC_SIZE    NUMBER,
+                         CONSTRAINT PK_PROFILE_PIC_ID PRIMARY KEY(PROFILE_PIC_ID)
+                        )
+/
+CREATE TABLE ADDRESS_TYPE(ADDRESS_TYPE_ID NUMBER,
+                          ADDRESS_TYPE VARCHAR2(32),
+                          CONSTRAINT PK_ADDRESS_TYPE_ID PRIMARY KEY(ADDRESS_TYPE_ID)
+                          )
+/
+CREATE TABLE ADDRESS(ADDRESS_ID NUMBER,
+                     LINE_1 VARCHAR2(100),
+                     LINE_2 VARCHAR2(100),
+                     CITY VARCHAR2(100),
+                     STATE VARCHAR2(100),
+                     COUNTRY VARCHAR2(100),
+                     PINCODE NUMBER,
+                     ADDRESS_TYPE_ID NUMBER,
+                     CONSTRAINT PK_ADDRESS_ID PRIMARY KEY(ADDRESS_ID),
+					 CONSTRAINT FK_ADD_ADDRESS_TYPE_ID FOREIGN KEY(ADDRESS_TYPE_ID) REFERENCES ADDRESS_TYPE(ADDRESS_TYPE_ID)
+                     )
+/
+CREATE TABLE CUSTOMER(CUST_ID NUMBER,
+                      USERNAME VARCHAR2(32),
+                      FIRST_NAME VARCHAR2(32),
+                      LAST_NAME VARCHAR2(32),
+                      DISPLAY_NAME VARCHAR2(32),
+                      CUST_EMAIL VARCHAR2(50),
+                      MOBILE NUMBER,
+                      CUST_BIO VARCHAR2(255),
+					  USER_TYPE_ID NUMBER,
+					  GENDER_ID NUMBER,
+					  PROFILE_PIC_ID NUMBER,
+					  TOTAL_EXPERIENCE NUMBER,
+				      DATE_OF_BIRTH DATE,
+				      JOINING_DATE DATE,
+                      CONSTRAINT PK_CUST_ID PRIMARY KEY(CUST_ID),
+					  CONSTRAINT FK_CUST_USER_TYPE_ID FOREIGN KEY(USER_TYPE_ID) REFERENCES USER_TYPE(USER_TYPE_ID),
+					  CONSTRAINT FK_CUST_GENDER_ID FOREIGN KEY(GENDER_ID) REFERENCES GENDER(GENDER_ID),
+					  CONSTRAINT FK_CUST_PROFILE_PIC_ID FOREIGN KEY(PROFILE_PIC_ID) REFERENCES PROFILE_PIC(PROFILE_PIC_ID)
+                      )
+/
+CREATE TABLE CUST_ADDRESS(CUST_ID NUMBER,
+                          ADDRESS_ID NUMBER,
+                          CONSTRAINT PK_CUST_ADD_ID PRIMARY KEY(CUST_ID,ADDRESS_ID)
+                          )
+/
+CREATE TABLE CUST_INTEREST(CUST_ID NUMBER,
+                           INTEREST_ID NUMBER,
+                           CONSTRAINT PK_CUST_INT_ID PRIMARY KEY(CUST_ID,INTEREST_ID)
+                          )
+/
+CREATE TABLE COURSE_DOMAIN(COURSE_DOMAIN_ID NUMBER,
+                           COURSE_DOMAIN_NAME VARCHAR2(32),
+                           CONSTRAINT PK_DOMAIN_ID PRIMARY KEY(COURSE_DOMAIN_ID)
+					       )
+/
+CREATE TABLE CART_COURSE(CART_ID NUMBER,
+                         COURSE_ID NUMBER,
+                         CONSTRAINT PK_CART_COURSE_ID PRIMARY KEY(CART_ID,COURSE_ID)
+					       )
+/
+CREATE TABLE CART(CART_ID NUMBER,
+                  CUST_ID NUMBER,
+                  TOTAL_PRICE NUMBER,
+				  total_course number,
+                  CONSTRAINT PK_CART_ID PRIMARY KEY(CART_ID)
+					       )
+/
+CREATE TABLE CUSTOMER_COURSE(CUST_ID NUMBER,
+				              COURSE_ID NUMBER,
+                              BOUGHT_DATE DATE,
+                              CONSTRAINT PK_CUST_COURSE_ID PRIMARY KEY(CUST_ID,COURSE_ID)
+					       )
+/
+CREATE TABLE AUTHOR(AUTHOR_ID NUMBER,
+                    AUTHOR_NAME VARCHAR2(100),
+                    CONSTRAINT PK_AUTHOR_ID PRIMARY KEY(AUTHOR_ID)
+					       )
+/
+
+CREATE TABLE AUTHOR_COURSE(AUTHOR_ID NUMBER,
+                           COURSE_ID NUMBER,
+                           CONSTRAINT PK_AUTHOR_COURSE_ID PRIMARY KEY(AUTHOR_ID,COURSE_ID)
+					       )
+/
+CREATE TABLE COURSE(COURSE_ID NUMBER,
+                     COURSE_NAME VARCHAR2(100),
+                     COURSE_DESC VARCHAR2(255),
+                     COURSE_ADDED_DATE DATE,
+					 COURSE_PRICE NUMBER,
+					 COURSE_DOMAIN_ID NUMBER,
+					 AUTHOR_ID NUMBER,
+					 COURSE_AVG_RATING  number,
+                     CONSTRAINT PK_COURSE_ID PRIMARY KEY(COURSE_ID),
+					 CONSTRAINT FK_COURSE_DOMAIN_ID FOREIGN KEY(COURSE_DOMAIN_ID) REFERENCES COURSE_DOMAIN(COURSE_DOMAIN_ID),
+					 CONSTRAINT FK_AUTHOR_ID FOREIGN KEY(AUTHOR_ID) REFERENCES AUTHOR(AUTHOR_ID)
+					 )
+/
+CREATE TABLE COURSE_DETAIL(COURSE_ID NUMBER,
+                           SECTION_ID NUMBER,
+                           SECTION_NAME VARCHAR2(100),
+                           SECTION_DESC VARCHAR2(255),
+                           CONSTRAINT PK_COURSE_SECTION_ID PRIMARY KEY(COURSE_ID,SECTION_ID)
+					       )
+/
+CREATE TABLE COURSE_SECTION_DETAIL(COURSE_ID NUMBER,
+                                   SECTION_ID NUMBER,
+                                   VIDEO_ID NUMBER,
+                                   CONSTRAINT PK_COURSE_SECTION_DETAIL_ID PRIMARY KEY(COURSE_ID,SECTION_ID,VIDEO_ID)
+					               )
+/
+CREATE TABLE COURSE_VIDEO(VIDEO_ID NUMBER, 
+                          VIDEO_TITLE VARCHAR2(20),
+                          VIDEO BFILE,
+						  UPLOAD_DATE DATE,
+						  VIDEO_SIZE    NUMBER,
+						  DURATION_IN_MINUTES    NUMBER,
+                          CONSTRAINT PK_VIDEO_ID PRIMARY KEY(VIDEO_ID)
+                          )
+/
+CREATE TABLE ORDERS(ORDER_ID NUMBER,
+                   CUST_ID NUMBER,
+				   ORDER_DATE DATE,
+                   TOTAL_PRICE NUMBER,
+				   TOTAL_COURSE NUMBER,
+                   SHIP_ID NUMBER,
+                   DELIVERY_ID NUMBER,
+                   CONSTRAINT PK_ORDER_ID PRIMARY KEY(ORDER_ID)
+				   )
+/
+CREATE TABLE ORDER_COURSE(ORDER_ID NUMBER,
+                          COURSE_ID NUMBER,
+                          CONSTRAINT PK_ORDER_COURSE_ID PRIMARY KEY(ORDER_ID,COURSE_ID)
+				          )
+/
+create table RATING(RATING_ID NUMBER,
+                    CUST_ID   NUMBER,
+					COURSE_ID NUMBER,
+					RATING    NUMBER,
+                    CONSTRAINT PK_rating_cust_course_ID PRIMARY KEY(rating_id,cust_id,course_id)
+					)
+/					

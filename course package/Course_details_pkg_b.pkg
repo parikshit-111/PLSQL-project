@@ -1,0 +1,409 @@
+
+CREATE OR REPLACE PACKAGE body Course_details_pkg
+AS
+
+
+  FUNCTION create_course(I_course_details              in course_details,
+                         I_course_section_details      in course_details_rec,
+                         I_course_id       out course.course_id%type,
+                         O_error_message   in out varchar2)
+  RETURN BOOLEAN IS
+  
+  L_course_id           course.course_id%type             := null;
+  L_video_id            course_video.video_id%type        := null;
+  L_section_id          course_detail.section_id%type    := null; 
+  L_filename varchar2(150);
+  	   l_section_name course_detail.section_name%type    := null; 
+	   l_section_desc course_detail.section_desc%type    := null; 
+  l_index varchar2(50) :=null;
+  L_sysdate             DATE                              :=SYSDATE;
+  L_code NUMBER;
+  L_errm VARCHAR2(64);
+  
+  BEGIN
+  
+    L_course_id           :=courses_seq.NEXTVAL;
+    
+    
+	
+    
+	insert into course(course_id,
+	                   course_name,
+					   course_desc,
+					   course_added_date,
+					   course_price,
+					   course_domain_id ,
+					   author_id)
+				 values (L_course_id,
+				         I_course_details.course_name,
+						 I_course_details.course_desc,
+						 I_course_details.course_added_date,
+						 I_course_details.course_price,
+						 I_course_details.course_domain_id,
+						 I_course_details.author_id
+				        );
+						
+	for i in 1 .. I_course_section_details.count LOOP
+	   
+	   L_section_id :=i;
+	   l_section_name :=I_course_section_details(i).section_name;
+	   l_section_desc :=I_course_section_details(i).section_desc;
+	   insert into course_detail(course_id,
+	                              section_id,
+								  section_name,
+								  section_desc)
+							values (L_course_id,
+							        L_section_id,
+									l_section_name,
+									l_section_desc);
+		
+		for j in 1 .. 10 LOOP
+        L_video_id            :=video_seq.NEXTVAL;
+		l_index:=to_char(L_video_id);
+		l_filename:=l_index||'_'||'just_a_dummy_video.mp4';
+		insert into COURSE_VIDEO(video_id,
+		                         VIDEO_TITLE,
+								 VIDEO,
+								 UPLOAD_DATE,
+								 VIDEO_SIZE,
+								 DURATION_IN_MINUTES)
+						   values(L_video_id,
+						          'some dummy title : ',
+								  BFILENAME('c:/pbarua/videos/deloitte/',l_filename),
+								  L_sysdate,
+								  round(dbms_random.value(10000,9999990),0),
+								  round(dbms_random.value(1,70),0));
+								  
+		insert into COURSE_SECTION_DETAIL(course_id,
+                                          section_id,
+                                          video_id)
+                          			values(L_course_id,
+                                          L_section_id,
+                                          L_video_id);
+                          												  
+		end loop;
+		
+
+		
+    end LOOP;
+    
+    insert into author_course(author_id,
+                              course_id) 
+                       values(I_course_details.author_id,
+                              L_course_id);
+	commit;
+
+	I_course_id:=L_course_id;					  
+	return true;					  
+	EXCEPTION
+	
+	WHEN OTHERS THEN
+    L_code := SQLCODE;
+    L_errm := SUBSTR(SQLERRM, 1 , 64);
+	O_error_message := 'Could not insert the customer data '||L_code||' '||L_errm;
+	return false;
+	 
+	End create_course;
+	
+	
+
+  FUNCTION delete_course(I_course_name       in course.course_name%type,
+                         O_course_id         out course.course_id%type,
+                         O_error_message   in out varchar2)
+  RETURN BOOLEAN IS
+  
+  L_get_course_id           course.course_id%type             := null;
+  L_video_id            course_video.video_id%type        := null;
+  L_section_id          course_detail.section_id%type    := null; 
+  	   l_section_name course_detail.section_name%type    := null; 
+	   l_section_desc course_detail.section_desc%type    := null; 
+  l_index number :=null;
+  L_sysdate             DATE                              :=SYSDATE;
+  L_code NUMBER;
+  L_errm VARCHAR2(64);
+  
+  
+  cursor c_get_course_id IS
+  select course_id
+    from course
+   where course_name=I_course_name;
+  
+  BEGIN
+    
+    open c_get_course_id;
+	fetch c_get_course_id into l_get_course_id;
+	close c_get_course_id;
+	
+	delete from course_video 
+	       where video_id in(select video_id
+		                       from course_section_detail
+							  where course_id=l_get_course_id);
+							  
+	delete from course_section_detail 
+	      where course_id=l_get_course_id;	
+		  
+ 	delete from course_detail 
+	      where course_id=l_get_course_id;	   
+
+ 	delete from author_course 
+	      where course_id=l_get_course_id;
+          
+          
+ 	delete from course 
+	      where course_id=l_get_course_id;	     
+	
+    
+    O_course_id :=l_get_course_id;			  
+	return true;					  
+	EXCEPTION
+	
+	WHEN OTHERS THEN
+    L_code := SQLCODE;
+    L_errm := SUBSTR(SQLERRM, 1 , 64);
+	O_error_message := 'Could not insert the customer data '||L_code||' '||L_errm;
+	return false;
+	 
+	End delete_course;	
+
+  FUNCTION get_course_details(I_course_name       in course.course_name%type,
+                              O_course_id         out course.course_id%type,
+                              O_error_message     in out varchar2)
+  RETURN BOOLEAN IS
+ 
+  L_get_course_id           course.course_id%type             := null;
+  L_sysdate             DATE                                  :=SYSDATE;
+  L_total_sections      number                                :=null;
+  L_course_duration      number                                :=null;
+  L_course_name         course.course_name%type               :=null;
+  L_course_desc         course.course_desc%type               :=null;
+  L_course_avg_rating   course.course_avg_rating%type         :=null;
+  L_course_price        course.course_price%type              :=null;
+  L_author_name         author.author_name%type               :=null;
+  L_course_domain_name  course_domain.course_domain_name%type :=null;
+  L_code NUMBER;
+  L_errm VARCHAR2(64);
+  
+  
+  cursor c_get_course_id IS
+  select course_id
+    from course
+   where course_name=I_course_name; 
+   
+   
+   cursor c_get_course_details IS
+   select c.course_name,
+          c.course_desc,
+		  c.course_price,
+		  c.course_avg_rating,
+		  a.author_name,
+		  cd.course_domain_name
+	  from course c,
+	       author a,
+		   author_course ac,
+		   course_domain cd
+	 where c.course_domain_id=cd.course_domain_id
+	   and a.author_id=ac.author_id
+	   and c.course_id=ac.course_id
+	   and c.course_id=L_get_course_id;
+
+       cursor c_get_course_section_details IS
+   select count(section_id) total_sections
+	  from course_detail
+	 where course_id=L_get_course_id
+	 group by course_id;   
+	
+
+   cursor c_get_course_duration_details IS	
+	    select sum(v.duration_in_minutes)/60 total_duration
+	  from course c,
+           course_section_detail csd,
+           course_video v
+	 where c.course_id=csd.course_id
+       and csd.video_id=v.video_id
+       and c.course_id=L_get_course_id
+	 group by c.course_id; 
+   
+   
+  BEGIN
+  
+    open c_get_course_id;
+	fetch c_get_course_id into l_get_course_id;
+	close c_get_course_id;
+	
+    open c_get_course_details;
+	fetch c_get_course_details into L_course_name ,       
+	                           L_course_desc ,       
+	                           L_course_price ,
+                               L_course_avg_rating,							   
+	                           L_author_name ,       
+	                           L_course_domain_name ;
+		
+	close c_get_course_details;	
+	
+	open c_get_course_section_details;
+	fetch c_get_course_section_details into L_total_sections;
+	close c_get_course_section_details;
+	
+	open c_get_course_duration_details;
+	fetch c_get_course_duration_details into L_course_duration;
+	close c_get_course_duration_details;
+	
+	
+	dbms_output.put_line('xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx');
+	dbms_output.put_line('COURSE NAME : '||L_course_name);
+	dbms_output.put_line('COURSE DESC : '||L_course_desc);
+	dbms_output.put_line('COURSE TOTAL SECTIONS : '||L_total_sections);
+	dbms_output.put_line('COURSE DURATION IN HRS : '||L_course_duration);
+	dbms_output.put_line('COURSE RATING : '||L_course_avg_rating);
+	dbms_output.put_line('COURSE PRICE : '||L_course_price);
+	dbms_output.put_line('COURSE AUTHOR : '||L_author_name);
+	dbms_output.put_line('COURSE DOMAIN : '||L_course_domain_name);
+	dbms_output.put_line('xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx');
+  
+    O_course_id :=l_get_course_id;			  
+	return true;					  
+	EXCEPTION
+	
+	WHEN OTHERS THEN
+    L_code := SQLCODE;
+    L_errm := SUBSTR(SQLERRM, 1 , 64);
+	O_error_message := 'Could not insert the customer data '||L_code||' '||L_errm;
+	return false;
+	
+  END get_course_details;
+  
+    FUNCTION customer_course_recomendation(I_cust_id       in customer.cust_id%type,
+                              O_error_message     in out varchar2)
+  RETURN BOOLEAN IS
+  
+  L_course_name         course.course_name%type               :=null;
+  L_course_desc         course.course_desc%type               :=null;
+  L_course_avg_rating   course.course_avg_rating%type         :=null;
+  L_course_price        course.course_price%type              :=null;
+  L_author_name         author.author_name%type               :=null;
+  L_course_domain_name  course_domain.course_domain_name%type :=null;
+  L_code NUMBER;
+  L_errm VARCHAR2(64);
+  
+  
+    cursor c_get_customer_interest_id IS
+  select cd.course_domain_name
+    from  cust_interest ci,
+	      course_domain cd
+   where ci.cust_id=I_cust_id
+     and ci.interest_id=cd.course_domain_id; 
+	 
+	   cursor c_get_course_details IS
+   select c.course_name,
+          c.course_desc,
+		  c.course_price,
+		  c.course_avg_rating,
+		  a.author_name
+	  from course c,
+	       author a,
+		   author_course ac,
+		   course_domain cd
+	 where c.course_domain_id=cd.course_domain_id
+	   and a.author_id=ac.author_id
+	   and c.course_id=ac.course_id
+	   and cd.course_domain_name=L_course_domain_name;
+ 
+  BEGIN
+    
+	for i in c_get_customer_interest_id
+	LOOP
+	    L_course_domain_name  := i.course_domain_name;
+		dbms_output.put_line('xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx');
+		dbms_output.put_line('DOMAIN : '||L_course_domain_name);
+		dbms_output.put_line('xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx');
+		
+		for j in c_get_course_details
+		LOOP
+		  L_course_name       :=j.course_name;  
+		  L_course_desc       :=j.course_desc;
+		  L_course_avg_rating :=j.course_avg_rating;
+		  L_course_price      :=j.course_price;
+		  L_author_name       :=j.author_name;
+		  
+		  
+	      dbms_output.put_line('COURSE NAME : '||L_course_name);
+	      dbms_output.put_line('COURSE DESC : '||L_course_desc);
+	      dbms_output.put_line('COURSE RATING : '||L_course_avg_rating);
+	      dbms_output.put_line('COURSE PRICE : '||L_course_price);
+	      dbms_output.put_line('COURSE AUTHOR : '||L_author_name);
+		dbms_output.put_line('-----------------------------------------');
+		  
+		end LOOP;
+		dbms_output.put_line('xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx');
+	end LOOP;
+  
+  
+  
+  	return true;					  
+	EXCEPTION
+	
+	WHEN OTHERS THEN
+    L_code := SQLCODE;
+    L_errm := SUBSTR(SQLERRM, 1 , 64);
+	O_error_message := 'Could not insert the customer data '||L_code||' '||L_errm;
+	return false;
+	
+  END customer_course_recomendation;
+
+  FUNCTION course_rating(I_course_id       in course.course_id%type,
+                         I_cust_id         in customer.cust_id%type,
+                         I_rating          in rating.rating%type,
+                         O_error_message   in out varchar2)
+  RETURN BOOLEAN IS
+  
+  L_course_avg_rating   course.course_avg_rating%type         :=null;
+  L_rating_id           rating.rating_id%type                 :=null;
+  L_code NUMBER;
+  L_errm VARCHAR2(64);
+  
+  cursor c_get_avg_rating IS
+  select avg(rating)
+    from rating 
+	where course_id=I_course_id
+	group by course_id;
+		 
+  
+  
+  BEGIN
+    L_rating_id  :=rating_seq.NEXTVAL;
+	
+	insert into rating(rating_id,
+	                   cust_id,
+					   course_id,
+					   rating)
+				values(L_rating_id,
+                       I_cust_id,
+					   I_course_id,
+					   I_rating);
+					   
+	commit;
+    
+	open c_get_avg_rating;
+	fetch c_get_avg_rating into L_course_avg_rating;
+	close c_get_avg_rating;
+	
+	update course
+	   set course_avg_rating=L_course_avg_rating
+	 where course_id=I_course_id;
+	   
+	commit;
+    	
+  
+  
+  	return true;					  
+	EXCEPTION
+	
+	WHEN OTHERS THEN
+    L_code := SQLCODE;
+    L_errm := SUBSTR(SQLERRM, 1 , 64);
+	O_error_message := 'Could not insert the customer data '||L_code||' '||L_errm;
+	return false;  
+  
+  end course_rating;
+
+End Course_details_pkg;	

@@ -1,0 +1,31 @@
+CREATE OR REPLACE PACKAGE Course_details_pkg
+AS
+
+  
+  FUNCTION create_course(I_course_details              in course_details,
+                         I_course_section_details      in course_details_rec,
+                         I_course_id       out course.course_id%type,
+                         O_error_message   in out varchar2)
+  RETURN BOOLEAN;
+  
+  FUNCTION delete_course(I_course_name       in course.course_name%type,
+                         O_course_id         out course.course_id%type,
+                         O_error_message   in out varchar2)
+  RETURN BOOLEAN ;
+  
+  FUNCTION get_course_details(I_course_name       in course.course_name%type,
+                         O_course_id         out course.course_id%type,
+                         O_error_message   in out varchar2)
+  RETURN BOOLEAN ;
+
+  FUNCTION customer_course_recomendation(I_cust_id       in customer.cust_id%type,
+                              O_error_message     in out varchar2)
+  RETURN BOOLEAN;
+  
+  FUNCTION course_rating(I_course_id       in course.course_id%type,
+                         I_cust_id         in customer.cust_id%type,
+                         I_rating          in rating.rating%type,
+                         O_error_message   in out varchar2)
+  RETURN BOOLEAN ;
+ 
+END Course_details_pkg;
